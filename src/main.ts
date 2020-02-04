@@ -1,18 +1,15 @@
-import {Lexer} from './core/lexer';
+import { Lexer } from './core/lexer';
 import fs from 'fs/promises';
-import {Parser} from "./core/parser";
+import { Parser } from './core/parser';
 
 async function main(): Promise<void> {
   Lexer.definition = {
-    Comment: /--.*/,
-    Arguments: /=>/,
-    Interval: /in(\s+)\[.*?]/,
-    Operations: /(=|\+|-|\\)/,
-    Integer: /(\d+(?:\.\d+)?)/,
+    Comment: /#.*/,
+    BracketOpen: /(\{|\[|\()/,
+    BracketClose: /(}|]|\))/,
     String: /".*?"/,
+    Integer: /\d+/,
     Word: /\w+/,
-    Bracket: /(\[|\]|\{|})/,
-    Range: /\.\./,
   };
 
   const content: string = await fs.readFile('./example/main.qrk', 'utf-8');
@@ -23,6 +20,24 @@ async function main(): Promise<void> {
       tok.line = index;
       return tok;
     }));
-  console.log(Parser.parse(tokens));
+
+  const parser = Parser.createParser(tokens);
+  parser.createNodeWith('BracketOpen');
+  parser.closeNodeWith('BracketClose');
+  parser.addRule('Word', function(ast, token, previous, next) {
+    if (previous.value === '(') {
+      return {
+        type: 'FunctionCall',
+        function: token.value,
+        args: [],
+      }
+    }
+    return {
+      type: 'Word',
+      value: token.value,
+    };
+  });
+
+  console.log(parser.output());
 }
 main();
