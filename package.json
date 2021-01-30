@@ -6,6 +6,9 @@
   "repository": "https://github.com/quark-lang/quark",
   "author": "thomasvergne <thomas@quark-lang.dev>",
   "license": "MIT",
+  "scripts": {
+    "start": "ts-node ./src/main.ts -P ./tsconfig.json"
+  },
   "dependencies": {
     "jest": "^26.6.3",
     "ts-jest": "^26.5.0",
