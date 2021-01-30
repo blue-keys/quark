@@ -12,6 +12,7 @@
       "node",
       "jest"
     ],
+    "lib": ["ES2015", "DOM"],
     "moduleResolution": "node",
     "downlevelIteration": true,
     "allowJs": true,
