@@ -1,0 +1,12 @@
+{
+  "name": "quark",
+  "version": "0.0.1",
+  "description": "Quark is a compiled programming language for computing.",
+  "main": "src/main.ts",
+  "repository": "https://github.com/quark-lang/quark",
+  "author": "thomasvergne <thomas@quark-lang.dev>",
+  "license": "MIT",
+  "dependencies": {
+    "typescript": "^4.1.3"
+  }
+}
