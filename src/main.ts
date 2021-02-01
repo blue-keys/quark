@@ -1,16 +1,17 @@
 import {Lexer} from './core/lexer';
 import fs from 'fs/promises';
+import {Parser} from "./core/parser";
 
 async function main(): Promise<void> {
   Lexer.definition = {
     Comment: /--.*/,
-    Type: /(Natural|Real)/,
     Arguments: /=>/,
+    Interval: /in(\s+)\[.*?]/,
     Operations: /(=|\+|-|\\)/,
     Integer: /(\d+(?:\.\d+)?)/,
     String: /".*?"/,
     Word: /\w+/,
-    Bracket: /(\[|\])/,
+    Bracket: /(\[|\]|\{|})/,
     Range: /\.\./,
   };
 
@@ -22,6 +23,6 @@ async function main(): Promise<void> {
       tok.line = index;
       return tok;
     }));
-  console.log(tokens);
+  console.log(Parser.parse(tokens));
 }
 main();

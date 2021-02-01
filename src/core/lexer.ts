@@ -44,7 +44,7 @@ interface LexerMatch {
   name: string,
   regex: RegExpMatchArray,
 }
-interface Token {
+export interface Token {
   type: string,
   value: string,
   length: number,
