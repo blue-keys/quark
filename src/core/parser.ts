@@ -20,8 +20,36 @@ export class Parser {
     return this.processAny(line + 1, 0, tokens, ast);
   }
 
-  private static varialeDefinition(token: Token, ast) {
-    console.log(ast);
+  private static variableDefinition(line: number, index: number, tokens: Token[][], ast) {
+    const tokensLine = tokens[line];
+    const token = tokensLine[index];
+
+    ast.type = 'VariableDefinition';
+    ast.return = { type: token.value };
+
+    ++index;
+    const name = tokensLine[index];
+    if (name.type !== 'Word') throw 'Function name must be a word';
+    ast.name = name.value;
+
+    ++index;
+    const interval = tokensLine[index].type === 'Interval'
+      ? tokensLine[index]
+      : null;
+    if (interval) {
+      ++index;
+      const match = interval.value.match(/\[.*?]/)[0];
+      const split = match.slice(1, match.length - 1);
+      const [from = -Infinity, to = +Infinity] = split
+        .split('..')
+        .filter((acc) => acc.length > 0)
+        .map(Number);
+      ast.return.interval = {
+        from,
+        to,
+      };
+    }
+    console.log(tokensLine[index]);
   }
 
   private static processAny(line: number, index: number, tokens: Token[][], ast) {
@@ -39,11 +67,12 @@ export class Parser {
         tabs: token.position,
         parent: ast,
       });
+      if (token.type === 'Word' && isType(token.value))
+        this.variableDefinition(line, index, tokens, ast.body.slice(-1)[0]);
     }
     // Processing new node
     if (token.value === 'do') {
       ast = ast.body.slice(-1)[0];
-      ast.type = 'Node';
       ast.tabs += 2;
       return this.processAny(line + 1, 0, tokens, ast);
     }
