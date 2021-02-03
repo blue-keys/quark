@@ -90,6 +90,8 @@ export class Parser {
     ast.type = type;
     if (isTokenContained({ type: 'Word', value: 'do' }, tokensLine))
       ast.type = 'FunctionDefinition';
+    else
+      ast.tabs = 2;
     if (ast.type === 'VariableDefinition') return;
     if (type === 'FunctionDefinition')
       ast.args = [];
@@ -102,6 +104,8 @@ export class Parser {
     );
 
     ast.args = splitArgs.map((x) => this.functionArgument(x || []));
+
+    return this.processAny(line, tokensLine.findIndex((acc) => acc.value === '='), tokens, ast);
   }
 
   private static processAny(line: number, index: number, tokens: Token[][], ast) {
@@ -120,11 +124,10 @@ export class Parser {
         parent: ast,
       });
       if (token.type === 'Word' && isType(token.value))
-        this.variableDefinition(line, index, tokens, ast.body.slice(-1)[0]);
+        return this.variableDefinition(line, index, tokens, ast.body.slice(-1)[0]);
     }
     // Processing new node
     if (token.value === 'do') {
-      ast = ast.body.slice(-1)[0];
       ast.tabs += 2;
       return this.processAny(line + 1, 0, tokens, ast);
     }
