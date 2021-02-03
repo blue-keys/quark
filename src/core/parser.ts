@@ -8,6 +8,20 @@ function isType(str: string): boolean {
   return str.match(/[A-Z][a-z]*/) !== null;
 }
 
+function chunkEveryTokens(tokens: Token[], cb: any) {
+  const array = [];
+  let tmp = [];
+  const reversedTokens = tokens.slice().reverse();
+  for (const _tok of reversedTokens) {
+    tmp.push(_tok);
+    if (cb(_tok) === true) {
+      array.push(tmp.reverse());
+      tmp = [];
+    }
+  }
+  return array.reverse();
+}
+
 export class Parser {
   private static ast = {
     type: 'Program',
@@ -49,7 +63,21 @@ export class Parser {
         to,
       };
     }
-    console.log(tokensLine[index]);
+    const type = tokensLine[index].type === 'Arguments'
+      ? 'FunctionDefinition'
+      : ast.type;
+    ast.type = type;
+    if (isTokenContained({ type: 'Word', value: 'do' }, tokensLine))
+      ast.type = 'FunctionDefinition';
+    if (ast.type === 'VariableDefinition') return;
+    if (type === 'FunctionDefinition')
+      ast.args = [];
+    const args = tokensLine
+      .slice(index + 1, tokensLine.findIndex((acc) => acc.value === '='));
+    const splitArgs = chunkEveryTokens(
+      args,
+      (tok: Token) => tok.type === 'Word' && isType(tok.value)
+    );
   }
 
   private static processAny(line: number, index: number, tokens: Token[][], ast) {
