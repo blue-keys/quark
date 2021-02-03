@@ -3,11 +3,9 @@ import { Token } from './lexer';
 function isTokenContained(token: { type: string, value: string, }, tokens: Token[]) {
   return tokens.some((acc) => acc.type === token.type && acc.value === token.value);
 }
-
 function isType(str: string): boolean {
   return str.match(/[A-Z][a-z]*/) !== null;
 }
-
 function chunkEveryTokens(tokens: Token[], cb: any) {
   const array = [];
   let tmp = [];
@@ -19,7 +17,7 @@ function chunkEveryTokens(tokens: Token[], cb: any) {
       tmp = [];
     }
   }
-  return array.reverse();
+  return array.reverse() || [];
 }
 
 export class Parser {
@@ -29,9 +27,32 @@ export class Parser {
     tabs: 0,
   };
 
-  private static processNode(line: number, index: number, tokens: Token[][], ast) {
-    ast.body = [];
-    return this.processAny(line + 1, 0, tokens, ast);
+  private static functionArgument(tokens: Token[]) {
+    if (tokens.length === 0) return;
+    const arg: any = {};
+    let index: number = 0;
+
+    if (!isType(tokens[index].value)) throw 'First word of argument must be a type';
+
+    arg.return = { type: tokens[index].value };
+    ++index;
+    if (tokens[index].type !== 'Word') throw 'Function argument name must be a word';
+    arg.name = tokens[index].value;
+    ++index;
+    if (!tokens[index]) return arg;
+
+    const match = tokens[index].value.match(/\[.*?]/)[0];
+    const split = match.slice(1, match.length - 1);
+    const [from = -Infinity, to = +Infinity] = split
+      .split('..')
+      .filter((acc) => acc.length > 0)
+      .map(Number);
+    arg.return.interval = {
+      from,
+      to,
+    };
+
+    return arg;
   }
 
   private static variableDefinition(line: number, index: number, tokens: Token[][], ast) {
@@ -72,12 +93,15 @@ export class Parser {
     if (ast.type === 'VariableDefinition') return;
     if (type === 'FunctionDefinition')
       ast.args = [];
+
     const args = tokensLine
       .slice(index + 1, tokensLine.findIndex((acc) => acc.value === '='));
     const splitArgs = chunkEveryTokens(
       args,
       (tok: Token) => tok.type === 'Word' && isType(tok.value)
     );
+
+    ast.args = splitArgs.map((x) => this.functionArgument(x || []));
   }
 
   private static processAny(line: number, index: number, tokens: Token[][], ast) {
