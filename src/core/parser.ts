@@ -1,10 +1,7 @@
 import { Token } from './lexer';
 
 class ParserCreator {
-  private ast: any = {
-    type: 'Program',
-    body: [],
-  };
+  private ast: any[] = [];
   private RULES: Record<string, any> = {};
   private readonly joinedTokens: Token[] = [];
 
@@ -25,6 +22,17 @@ class ParserCreator {
     this.tokens.map((line) => this.joinedTokens.push(...line));
   }
 
+  private findParent(node: any, root: any = this.ast): any | null {
+    let found: any | null = null;
+    for (const child of root) {
+      if (child === node) return root;
+      if ('type' in child && 'value' in child) continue;
+      found = this.findParent(node, child);
+      if (found !== null) return found;
+    }
+    return null;
+  }
+
   private getRule(token: Token): any {
     return this.RULES[token.type];
   }
@@ -42,28 +50,22 @@ class ParserCreator {
       if (!rule) continue;
       switch (rule) {
         case 'NodeCreator':
-          ast.body.push({
-            type: 'Node',
-            body: [],
-            parent: ast,
-          });
-          ast = ast.body.slice(-1)[0];
+          ast.push([]);
+          ast = ast.slice(-1)[0];
           break;
         case 'NodeDestructor':
-          ast = ast.parent;
+          ast = this.findParent(ast, this.ast);
           break;
         default:
-          if (typeof rule !== 'function') break;
-          const res = (<(..._: any) => any>rule)(
-            ast,
+          const fn = <(..._: any) => any><unknown>rule;
+          const res = fn(
             token,
             this.joinedTokens[Number(index) - 1],
-            this.joinedTokens[Number(index) + 1]
+            this.joinedTokens[Number(index) + 1],
+            ast.slice(-1)[0],
           );
-          for (const key in res) {
-            ast[key] = res[key];
-          }
-          console.log(ast);
+          if (res !== undefined) ast.push(res);
+          break;
       }
     }
     return this.ast;
