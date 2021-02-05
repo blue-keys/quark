@@ -24,20 +24,26 @@ async function main(): Promise<void> {
   const parser = Parser.createParser(tokens);
   parser.createNodeWith('BracketOpen');
   parser.closeNodeWith('BracketClose');
-  parser.addRule('Word', function(ast, token, previous, next) {
+
+  parser.addRule('Word', function(token, previous, _, lastNode) {
     if (previous.value === '(') {
       return {
         type: 'FunctionCall',
-        function: token.value,
-        args: [],
+        value: token.value,
+      }
+    }
+    if (lastNode.type === 'FunctionCall') {
+      return {
+        type: 'Argument',
+        value: token.value,
       }
     }
     return {
       type: 'Word',
       value: token.value,
-    };
+    }
   });
 
-  console.log(parser.output());
+  console.log(JSON.stringify(parser.output(), null, 2));
 }
 main();
