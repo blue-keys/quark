@@ -5,7 +5,7 @@ class ParserCreator {
     type: 'Program',
     body: [],
   };
-  private RULES: Record<string, string> = {};
+  private RULES: Record<string, any> = {};
   private readonly joinedTokens: Token[] = [];
 
   public createNodeWith(token: string[] | string) {
@@ -13,7 +13,6 @@ class ParserCreator {
     for (const tok of token) this.RULES[tok] = 'NodeCreator';
     return null;
   }
-
   public closeNodeWith(token: string[] | string) {
     if (!Array.isArray(token)) token = [token];
     for (const tok of token) this.RULES[tok] = 'NodeDestructor';
@@ -26,12 +25,19 @@ class ParserCreator {
     this.tokens.map((line) => this.joinedTokens.push(...line));
   }
 
-  private getRule(token: Token): string {
+  private getRule(token: Token): any {
     return this.RULES[token.type];
   }
 
+  public addRule(token: string[] | string, rule: (..._: any) => any) {
+    if (!Array.isArray(token)) token = [token];
+    for (const tok of token) this.RULES[tok] = rule;
+    return null;
+  }
+
   private process(ast: any = this.ast) {
-    for (const token of this.joinedTokens) {
+    for (const index in this.joinedTokens) {
+      const token = this.joinedTokens[index];
       const rule: string = this.getRule(token);
       if (!rule) continue;
       switch (rule) {
@@ -43,10 +49,21 @@ class ParserCreator {
           });
           ast = ast.body.slice(-1)[0];
           break;
-
         case 'NodeDestructor':
           ast = ast.parent;
           break;
+        default:
+          if (typeof rule !== 'function') break;
+          const res = (<(..._: any) => any>rule)(
+            ast,
+            token,
+            this.joinedTokens[Number(index) - 1],
+            this.joinedTokens[Number(index) + 1]
+          );
+          for (const key in res) {
+            ast[key] = res[key];
+          }
+          console.log(ast);
       }
     }
     return this.ast;
