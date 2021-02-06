@@ -1,11 +1,4 @@
-Natural factorial in [1..100] => Natural x in [1..100] Natural y = product [1..n]
-
-Natural main = do
-  Real x in [0..7] = 0
-  -- Mean that x cannot be higher than 7 and lower than 0
-  if x > 5 do
-    print "x higher than 5"
-  else do
-    print "x lower than 5"
-  print factorial 5
-  return 0
+{
+  (let user "Thomas[]")
+  (print user) # test
+}
