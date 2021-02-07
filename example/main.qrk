@@ -1,4 +1,2 @@
-{
-  (let user "Thomas[]")
-  (print user) # test
-}
+func main():
+  print("Hello world")
