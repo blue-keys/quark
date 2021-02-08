@@ -5,8 +5,9 @@ import { Parser } from './core/parser';
 async function main(): Promise<void> {
   Lexer.definition = {
     Comment: /#.*/,
-    BracketOpen: /(\{|\[|\()/,
-    BracketClose: /(}|]|\))/,
+    Block: /:/,
+    Keyword: /(func|print)/,
+    Bracket: /(\(|\))/,
     String: /".*?"/,
     Integer: /\d+/,
     Word: /\w+/,
@@ -21,29 +22,6 @@ async function main(): Promise<void> {
       return tok;
     }));
 
-  const parser = Parser.createParser(tokens);
-  parser.createNodeWith('BracketOpen');
-  parser.closeNodeWith('BracketClose');
-
-  parser.addRule('Word', function(token, previous, _, lastNode) {
-    if (previous.value === '(') {
-      return {
-        type: 'FunctionCall',
-        value: token.value,
-      }
-    }
-    if (lastNode.type === 'FunctionCall') {
-      return {
-        type: 'Argument',
-        value: token.value,
-      }
-    }
-    return {
-      type: 'Word',
-      value: token.value,
-    }
-  });
-
-  console.log(JSON.stringify(parser.output(), null, 2));
+  console.log(tokens)
 }
 main();
