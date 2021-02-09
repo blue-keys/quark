@@ -1,2 +1,6 @@
 func main():
   print("Hello world")
+  if test:
+    print("test")
+
+print(main())
