@@ -48,5 +48,13 @@ import { Parser } from './core/parser';
     })
   );
 
-  console.log(JSON.stringify(parser.parse(), null, 2));
+  const ast = parser.parse();
+  console.log(ast.output);
+
+  ast.on('macro', function(_, atom, _ast) {
+    console.log('MACRO DETECTED:', atom[1].value);
+    console.log('MACRO ARGS:', atom.slice(2, 3)[0].map((x) => x.value));
+  });
+
+  ast.visit();
 })();
