@@ -35,12 +35,15 @@ class ParserCreator {
       }
     }
   }
-  public register(rule: string | RegExp, options, callback: any) {
-    this.RULES.push({
-      property: rule,
-      options,
-      callback,
-    });
+  public register(rules: (string | RegExp) | (string | RegExp)[], options, callback: any) {
+    if (!Array.isArray(rules)) rules = [rules];
+    for (const rule of rules) {
+      this.RULES.push({
+        property: rule,
+        options,
+        callback,
+      });
+    }
   }
 
   public findParent(): any | null {
