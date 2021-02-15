@@ -2,69 +2,60 @@ import { Token } from './lexer';
 
 class ParserCreator {
   private ast: any = { tabs: 0 };
-  private RULES: Record<string, any> = {};
+  private RULES: { property: string | RegExp, callback: any }[] = [];
   private readonly joinedTokens: Token[] = [];
 
   protected constructor(
     private readonly tokens: Token[][],
-    private readonly options: any,
   ) {
     this.tokens.map((line) => this.joinedTokens.push(...line));
   }
 
   private getRule(token: Token): any {
-    return this.RULES[token.type];
-  }
-
-  private findParent(token: Token, ast) {
-    if (ast.tabs === token.position) return ast;
-    return this.findParent(token, ast.parent);
-  }
-
-  public node(opener: string, closer?: string) {
-    if (this.options.indentation || !closer) {
-      this.options.indentation = true;
-      this.RULES[opener] = 'NodeIndentation';
-    } else {
-      this.RULES[opener] = 'NodeCreator';
-      this.RULES[closer] = 'NodeDestructor';
+    const tokenTypes = this.RULES.filter((x) => typeof x.property === 'string');
+    const regexTypes = this.RULES.filter((x) => x.property instanceof RegExp);
+    const rules = [...regexTypes, ...tokenTypes];
+    for (const rule of rules) {
+      if (typeof rule.property === 'string' && (rule.property === token.type || rule.property === token.value)) {
+        return rule.callback;
+      } else if (rule.property instanceof RegExp && token.value.match(rule.property)) {
+        return rule.callback;
+      }
     }
+  }
+
+  private findParent(node: any, root: any = this.ast): any | null {
+    let found: any | null = null;
+    for (const child of root) {
+      if (child === node) return root;
+      if ('type' in child && 'value' in child) continue;
+      found = this.findParent(node, child);
+      if (found !== null) return found;
+    }
+    return null;
+  }
+
+  public register(rule: string | RegExp, callback: any) {
+    this.RULES.push({
+      property: rule,
+      callback,
+    });
   }
 
   public parse() {
-    let state: number = 0;
-    let ast = this.ast;
     for (const index in this.joinedTokens) {
-      const token = this.joinedTokens[index];
+      const startIndex = Number(index) - 1 >= 0 ? Number(index) - 1 : 0
+      const [previous, token, next] = this.joinedTokens.slice(startIndex, Number(index) + 2);
       const rule = this.getRule(token);
-      if (this.options.indentation) {
-        if (rule && rule === 'NodeIndentation') {
-          state = 1;
-          ast.body = [{ parent: ast, }];
-          continue;
-        }
-        if (state === 1) {
-          ast = ast.body.slice(-1)[0];
-          ast.tabs = token.position;
-          state = 0;
-        }
-        if (this.joinedTokens[Number(index) - 1]?.position > token.position && this.joinedTokens[Number(index) - 1]?.type !== 'Block') {
-          ast = this.findParent(token, ast);
-        }
-      }
-      if (token.type === 'Keyword') {
-        if (token.value === 'func') {
-          ast.type = 'FunctionDeclaration';
-        }
-      } else if (token.type === 'Word') {
-      }
+      if (!rule) continue;
+      rule(token, previous, next);
     }
-    console.log(this.ast)
+    return this.ast;
   }
 }
 
 export class Parser extends ParserCreator {
-  public static createParser(tokens: Token[][], options: any) {
-    return new ParserCreator(tokens, options);
+  public static createParser(tokens: Token[][]) {
+    return new ParserCreator(tokens);
   }
 }
