@@ -1,6 +1,9 @@
-func main():
-  print("Hello world")
-  if test:
-    print("test")
-
-print(main())
+{
+  (let username "Thomas")
+  {
+    (macro test (x xtest) {
+      (print x xtest)
+    })
+    (test "Hello" username)
+  }
+}
