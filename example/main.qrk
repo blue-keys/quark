@@ -4,6 +4,6 @@
     (macro test (x xtest) {
       (print x xtest)
     })
-    (test "Hello" username)
+    (test "Hello" username -17.52 54)
   }
 }
