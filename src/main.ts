@@ -2,14 +2,12 @@ import { Lexer } from './core/lexer';
 import fs from 'fs/promises';
 import { Parser } from './core/parser';
 
-async function main(): Promise<void> {
+(async function(): Promise<void> {
   Lexer.definition = {
     Comment: /#.*/,
-    Block: /:/,
-    Keyword: /(func|print)/,
-    Bracket: /(\(|\))/,
-    String: /".*?"/,
-    Integer: /\d+/,
+    Bracket: /[(){}]/,
+    String: /"(?:[^"\\]|\\.)*"/,
+    Integer: /(-)?\d+(\.\d+)?/,
     Word: /\w+/,
   };
 
@@ -22,6 +20,33 @@ async function main(): Promise<void> {
       return tok;
     }));
 
-  console.log(tokens)
-}
-main();
+  const parser = Parser.createParser(tokens);
+
+  // Node related parsing
+  parser.register(['(', '{'], {}, () => parser.pushNode());
+  parser.register([')', '}'], {}, () => parser.findParent());
+
+  // Types related parsing
+  parser.register('Word', {}, (token) =>
+    parser.pushAtom({
+      type: token.type,
+      value: token.value,
+    })
+  );
+
+  parser.register('String', {}, (token) =>
+    parser.pushAtom({
+      type: token.type,
+      value: token.value.slice(1, token.value.length - 1)
+    })
+  );
+
+  parser.register('Integer', {}, (token) =>
+    parser.pushAtom({
+      type: token.type,
+      value: Number(token.value)
+    })
+  );
+
+  console.log(JSON.stringify(parser.parse(), null, 2));
+})();
