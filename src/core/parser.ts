@@ -98,7 +98,11 @@ class ParserCreator {
       return JSON.parse(JSON.stringify(ast, getCircularReplacer()))
     }
 
-    defineProperty('output', formatAST(this.ast));
+    defineProperty('output', () => formatAST(this.ast));
+    defineProperty(
+      'raw',
+      () => JSON.stringify(this.ast.output(), null, 2)
+    );
 
     // AST Visitor
     defineProperty('visit', () => {
