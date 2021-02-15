@@ -1,8 +1,10 @@
 import { Token } from './lexer';
 
 class ParserCreator {
-  private ast: any = { tabs: 0 };
-  private RULES: { property: string | RegExp, callback: any }[] = [];
+  private ast: any = [];
+  private currAST: any = this.ast;
+
+  private RULES: { property: string | RegExp, callback: any, options: any }[] = [];
   private readonly joinedTokens: Token[] = [];
 
   protected constructor(
@@ -16,6 +18,16 @@ class ParserCreator {
     const regexTypes = this.RULES.filter((x) => x.property instanceof RegExp);
     const rules = [...regexTypes, ...tokenTypes];
     for (const rule of rules) {
+      if (rule.options.except) {
+        for (const exception of rule.options.except) {
+          if (typeof exception === 'string' && (exception === token.type || exception === token.value)) {
+            return;
+          }
+          if (exception instanceof RegExp && token.value.match(exception)) {
+            return;
+          }
+        }
+      }
       if (typeof rule.property === 'string' && (rule.property === token.type || rule.property === token.value)) {
         return rule.callback;
       } else if (rule.property instanceof RegExp && token.value.match(rule.property)) {
@@ -23,23 +35,27 @@ class ParserCreator {
       }
     }
   }
-
-  private findParent(node: any, root: any = this.ast): any | null {
-    let found: any | null = null;
-    for (const child of root) {
-      if (child === node) return root;
-      if ('type' in child && 'value' in child) continue;
-      found = this.findParent(node, child);
-      if (found !== null) return found;
-    }
-    return null;
-  }
-
-  public register(rule: string | RegExp, callback: any) {
+  public register(rule: string | RegExp, options, callback: any) {
     this.RULES.push({
       property: rule,
+      options,
       callback,
     });
+  }
+
+  public findParent(): any | null {
+    this.currAST = this.currAST.parent || this.ast;
+    return this.currAST;
+  }
+  public pushNode() {
+    this.currAST.push([]);
+    const parent = this.currAST;
+    this.currAST = this.currAST.slice(-1)[0];
+    this.currAST.parent = parent;
+    return this.currAST;
+  }
+  public pushAtom(el: Record<string, any>) {
+    return this.currAST.push(el);
   }
 
   public parse() {
