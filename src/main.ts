@@ -48,13 +48,44 @@ import { Parser } from './core/parser';
     })
   );
 
+  function updateEveryNode(types, values, node) {
+    values = values.slice(0, types.length);
+    function visit(_node) {
+      if (Array.isArray(_node)) {
+        for (const child of _node) visit(child);
+      } else {
+        if (types.includes(_node.value)) {
+          const arg = values[types.indexOf(_node.value)];
+          for (const prop in arg) {
+            _node[prop] = arg[prop];
+          }
+        }
+      }
+      return _node;
+    }
+    return visit(node);
+  }
+
   const ast = parser.parse();
-  console.log(ast.output);
+
+  const macros = {};
 
   ast.on('macro', function(_, atom, _ast) {
-    console.log('MACRO DETECTED:', atom[1].value);
-    console.log('MACRO ARGS:', atom.slice(2, 3)[0].map((x) => x.value));
+    macros[atom[1].value] = {
+      args: atom.slice(2, 3)[0].map((x) => x.value),
+      body: atom[3],
+    };
+
+    ast.on(atom[1].value, function(node, _, _ast) {
+      const args = _ast.slice(1);
+      _ast.splice(
+        0,
+        _ast.length,
+        ...updateEveryNode(macros[node.value].args, args, macros[node.value].body)
+      );
+    })
   });
 
   ast.visit();
+  console.log(ast.raw());
 })();
